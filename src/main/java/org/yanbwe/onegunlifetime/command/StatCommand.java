@@ -81,10 +81,15 @@ public final class StatCommand {
                         "onegunlifetime.command.not_bound"));
                 yield 0;
             }
-            default -> {
-                // INVALID_ATTRIBUTE / INVALID_VALUE / INVALID_TRAIT
+            case INVALID_VALUE -> {
                 source.sendFailure(Component.translatable(
-                        "onegunlifetime.command.stat.invalid"));
+                        "onegunlifetime.command.stat.invalid_value"));
+                yield 0;
+            }
+            case INVALID_ATTRIBUTE, INVALID_TRAIT -> {
+                // INVALID_TRAIT is unreachable in the stat path.
+                source.sendFailure(Component.translatable(
+                        "onegunlifetime.command.stat.invalid_attribute"));
                 yield 0;
             }
         };

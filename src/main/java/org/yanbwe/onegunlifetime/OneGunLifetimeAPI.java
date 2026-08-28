@@ -1,5 +1,6 @@
 package org.yanbwe.onegunlifetime;
 
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -65,7 +66,7 @@ public final class OneGunLifetimeAPI {
         NOT_REGISTERED
     }
 
-    /** Outcome of a stat/trait mutation. */
+    /** Outcome of a soul-data mutation (stats, traits, gun state). */
     public enum MutationResult {
         SUCCESS,
         NOT_BOUND,
@@ -81,11 +82,17 @@ public final class OneGunLifetimeAPI {
      * Outcome of a plugin add/remove attempt.
      *
      * @param status          classification of the outcome
-     * @param rejectionReason localizable reason from the ModularShoot pipeline
-     *                        (install error message, or uninstall reason name);
-     *                        {@code null} unless status is {@code NOT_INSTALLED}
+     * @param uninstallReason structured reason from the ModularShoot uninstall
+     *                        pipeline; non-null only when a {@link #removePlugin}
+     *                        change was rejected
+     * @param rejectionReason localizable reason from the ModularShoot install
+     *                        pipeline; non-null only when an {@link #addPlugin}
+     *                        change was rejected
      */
-    public record PluginChangeResult(Status status, @Nullable Component rejectionReason) {
+    public record PluginChangeResult(
+            Status status,
+            @Nullable UninstallResult.Reason uninstallReason,
+            @Nullable Component rejectionReason) {
 
         /** Classification of a plugin change outcome. */
         public enum Status {
@@ -104,16 +111,21 @@ public final class OneGunLifetimeAPI {
         }
 
         public static PluginChangeResult ok() {
-            return new PluginChangeResult(Status.SUCCESS, null);
+            return new PluginChangeResult(Status.SUCCESS, null, null);
         }
 
         public static PluginChangeResult fail(Status status) {
-            return new PluginChangeResult(status, null);
+            return new PluginChangeResult(status, null, null);
         }
 
-        /** Wraps a rejection from the ModularShoot pipeline. */
+        /** Wraps a rejection from the ModularShoot install pipeline. */
         public static PluginChangeResult rejected(@Nullable Component reason) {
-            return new PluginChangeResult(Status.NOT_INSTALLED, reason);
+            return new PluginChangeResult(Status.NOT_INSTALLED, null, reason);
+        }
+
+        /** Wraps a rejection from the ModularShoot uninstall pipeline. */
+        public static PluginChangeResult rejected(UninstallResult.Reason reason) {
+            return new PluginChangeResult(Status.NOT_INSTALLED, reason, null);
         }
     }
 
@@ -150,8 +162,9 @@ public final class OneGunLifetimeAPI {
      * <p>Pure computation with no entity access. Each entry runs one
      * synthesis, so cache the result instead of calling per tick.</p>
      *
-     * @return an unmodifiable map of logical attribute id to final value;
-     *         empty when the player is unbound
+     * @return an unmodifiable map of logical attribute id to final value,
+     *         iterating in {@code modularshoot:attribute_meta} registry
+     *         order; empty when the player is unbound
      */
     public static Map<ResourceLocation, Double> getEffectiveValues(ServerPlayer player) {
         Objects.requireNonNull(player, "player");
@@ -175,7 +188,7 @@ public final class OneGunLifetimeAPI {
             values.put(logicalId, PlayerGunAttributeModifierService.calculateValue(
                     data, logicalId, registryAccess));
         }
-        return Map.copyOf(values);
+        return Collections.unmodifiableMap(values);
     }
 
     // ===== Lifecycle =====================================================
@@ -371,10 +384,13 @@ public final class OneGunLifetimeAPI {
      * Removes one installed plugin identified by its instance uuid from the
      * player's projection gun. The stack is mutated in place by the
      * ModularShoot pipeline; the framework's post-uninstall event then writes
-     * the final plugin list to the soul data and refreshes attributes.
+     * the final plugin list to the soul data and refreshes attributes. The
+     * removed plugin item is returned to the player's inventory (dropped at
+     * their feet when full).
      *
-     * @return {@link PluginChangeResult.Status#NOT_INSTALLED} with a literal
-     *         reason when the pipeline rejects (locked, uuid not found, ...)
+     * @return {@link PluginChangeResult.Status#NOT_INSTALLED} with the
+     *         structured {@link UninstallResult.Reason} when the pipeline
+     *         rejects (locked, uuid not found, ...)
      */
     public static PluginChangeResult removePlugin(ServerPlayer player, UUID pluginInstanceUuid) {
         Objects.requireNonNull(player, "player");
@@ -388,9 +404,9 @@ public final class OneGunLifetimeAPI {
         }
 
         UninstallResult result = ModularShootAPI.uninstallPlugin(
-                projection, pluginInstanceUuid, player, false, false);
+                projection, pluginInstanceUuid, player, false, true);
         if (!result.success()) {
-            return PluginChangeResult.rejected(Component.literal(result.reason().name()));
+            return PluginChangeResult.rejected(result.reason());
         }
         return PluginChangeResult.ok();
     }
@@ -416,12 +432,17 @@ public final class OneGunLifetimeAPI {
     /**
      * Replaces the soul data's runtime gun state.
      *
-     * @throws IllegalStateException when the player is not bound
+     * @return {@link MutationResult#NOT_BOUND} when the player is not bound;
+     *         {@link MutationResult#SUCCESS} otherwise
      */
-    public static void setGunState(ServerPlayer player, CompoundTag state) {
+    public static MutationResult setGunState(ServerPlayer player, CompoundTag state) {
         Objects.requireNonNull(player, "player");
         Objects.requireNonNull(state, "state");
+        if (!SoulDataManager.isBound(player)) {
+            return MutationResult.NOT_BOUND;
+        }
         SoulDataManager.setGunState(player, state);
+        return MutationResult.SUCCESS;
     }
 
     // ===== Internals =====================================================
