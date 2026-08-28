@@ -67,7 +67,7 @@ Other mods can use the full Java API via a Maven dependency (facade class `org.y
 | 属性与特性 / Stats & Traits | `setStatOverride` `removeStatOverride` `clearStatOverrides` `addTrait` `removeTrait` |
 | 插件与枪态 / Plugins & State | `addPlugin` `removePlugin` `setGunState` |
 
-发布坐标 / Maven coordinates：`org.yanbwe.onegunlifetime:onegunlifetime:1.1.0`（GitHub Packages：`https://maven.pkg.github.com/Yanbwe/OneGunLifetime`）。
+发布坐标 / Maven coordinates：`org.yanbwe.onegunlifetime:onegunlifetime:1.0.0`（GitHub Packages：`https://maven.pkg.github.com/Yanbwe/OneGunLifetime`）。
 
 # 使用文档 / Documentation
 
