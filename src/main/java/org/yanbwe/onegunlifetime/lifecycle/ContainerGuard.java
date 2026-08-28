@@ -17,8 +17,7 @@ import net.neoforged.neoforge.event.ItemStackedOnOtherEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerContainerEvent;
 import org.jetbrains.annotations.Nullable;
 
-import org.yanbwe.modularshoot.ModularShootAPI;
-import org.yanbwe.onegunlifetime.def.SoulGunId;
+import org.yanbwe.onegunlifetime.item.ProjectionGuns;
 import org.yanbwe.onegunlifetime.scan.AssimilationService;
 import org.yanbwe.onegunlifetime.soul.SoulDataManager;
 
@@ -54,12 +53,7 @@ public final class ContainerGuard {
      * Returns the soul owner UUID carried by a projection gun, if any.
      */
     public static Optional<UUID> ownerOf(ItemStack stack) {
-        if (stack == null || stack.isEmpty()) {
-            return Optional.empty();
-        }
-        return ModularShootAPI.getGunId(stack)
-                .filter(SoulGunId::isSoulGunId)
-                .flatMap(SoulGunId::parse);
+        return ProjectionGuns.ownerOf(stack);
     }
 
     /**

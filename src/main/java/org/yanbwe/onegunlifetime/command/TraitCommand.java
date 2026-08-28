@@ -1,23 +1,23 @@
 package org.yanbwe.onegunlifetime.command;
 
+import java.util.function.Supplier;
+
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.commands.arguments.ResourceLocationArgument;
-import net.minecraft.core.Registry;
-import net.minecraft.core.RegistryAccess;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
-import org.yanbwe.modularshoot.registry.ModularShootRegistries;
-import org.yanbwe.modularshoot.registry.Trait;
-import org.yanbwe.onegunlifetime.attribute.PlayerGunAttributeModifierService;
-import org.yanbwe.onegunlifetime.soul.SoulDataManager;
+import org.yanbwe.onegunlifetime.OneGunLifetimeAPI;
 
 /**
  * Implements {@code /onegun trait add/remove}.
+ *
+ * <p>Validation and persistence live in
+ * {@link org.yanbwe.onegunlifetime.OneGunLifetimeAPI}.</p>
  */
 public final class TraitCommand {
 
@@ -39,20 +39,9 @@ public final class TraitCommand {
         ServerPlayer player = source.getPlayerOrException();
         ResourceLocation traitId = ResourceLocationArgument.getId(context, "traitId");
 
-        if (!ensureBound(source, player)) {
-            return 0;
-        }
-        if (!isValidTrait(player.registryAccess(), traitId)) {
-            source.sendFailure(Component.translatable("onegunlifetime.command.trait.invalid"));
-            return 0;
-        }
-
-        SoulDataManager.addTrait(player, traitId);
-        PlayerGunAttributeModifierService.refresh(player);
-
-        source.sendSuccess(() -> Component.translatable(
-                "onegunlifetime.command.trait.add_success", traitId), false);
-        return 1;
+        var result = OneGunLifetimeAPI.addTrait(player, traitId);
+        return handleResult(source, result, () -> Component.translatable(
+                "onegunlifetime.command.trait.add_success", traitId));
     }
 
     private static int remove(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
@@ -60,33 +49,31 @@ public final class TraitCommand {
         ServerPlayer player = source.getPlayerOrException();
         ResourceLocation traitId = ResourceLocationArgument.getId(context, "traitId");
 
-        if (!ensureBound(source, player)) {
-            return 0;
-        }
-        if (!isValidTrait(player.registryAccess(), traitId)) {
-            source.sendFailure(Component.translatable("onegunlifetime.command.trait.invalid"));
-            return 0;
-        }
-
-        SoulDataManager.removeTrait(player, traitId);
-        PlayerGunAttributeModifierService.refresh(player);
-
-        source.sendSuccess(() -> Component.translatable(
-                "onegunlifetime.command.trait.remove_success", traitId), false);
-        return 1;
+        var result = OneGunLifetimeAPI.removeTrait(player, traitId);
+        return handleResult(source, result, () -> Component.translatable(
+                "onegunlifetime.command.trait.remove_success", traitId));
     }
 
-    private static boolean ensureBound(CommandSourceStack source, ServerPlayer player) {
-        if (SoulDataManager.isBound(player)) {
-            return true;
-        }
-        source.sendFailure(Component.translatable("onegunlifetime.command.not_bound"));
-        return false;
-    }
-
-    private static boolean isValidTrait(RegistryAccess registryAccess, ResourceLocation traitId) {
-        Registry<Trait> traitRegistry =
-                registryAccess.registry(ModularShootRegistries.TRAITS_KEY).orElse(null);
-        return traitRegistry != null && traitRegistry.get(traitId) != null;
+    private static int handleResult(
+            CommandSourceStack source,
+            OneGunLifetimeAPI.MutationResult result,
+            Supplier<Component> successMessage) {
+        return switch (result) {
+            case SUCCESS -> {
+                source.sendSuccess(successMessage, false);
+                yield 1;
+            }
+            case NOT_BOUND -> {
+                source.sendFailure(Component.translatable(
+                        "onegunlifetime.command.not_bound"));
+                yield 0;
+            }
+            default -> {
+                // INVALID_TRAIT is the only reachable failure here
+                source.sendFailure(Component.translatable(
+                        "onegunlifetime.command.trait.invalid"));
+                yield 0;
+            }
+        };
     }
 }

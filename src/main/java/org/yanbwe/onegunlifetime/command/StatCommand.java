@@ -1,5 +1,7 @@
 package org.yanbwe.onegunlifetime.command;
 
+import java.util.function.Supplier;
+
 import com.mojang.brigadier.arguments.DoubleArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
@@ -7,18 +9,16 @@ import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.commands.arguments.ResourceLocationArgument;
-import net.minecraft.core.Registry;
-import net.minecraft.core.RegistryAccess;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
-import org.yanbwe.modularshoot.registry.ModularShootRegistries;
-import org.yanbwe.modularshoot.registry.attribute.AttributeMeta;
-import org.yanbwe.onegunlifetime.attribute.PlayerGunAttributeModifierService;
-import org.yanbwe.onegunlifetime.soul.SoulDataManager;
+import org.yanbwe.onegunlifetime.OneGunLifetimeAPI;
 
 /**
  * Implements {@code /onegun stat set/reset}.
+ *
+ * <p>Validation and persistence live in
+ * {@link org.yanbwe.onegunlifetime.OneGunLifetimeAPI}.</p>
  */
 public final class StatCommand {
 
@@ -43,40 +43,18 @@ public final class StatCommand {
         ResourceLocation attributeId = ResourceLocationArgument.getId(context, "attribute");
         double value = DoubleArgumentType.getDouble(context, "value");
 
-        if (!ensureBound(source, player)) {
-            return 0;
-        }
-        if (!Double.isFinite(value)) {
-            source.sendFailure(Component.translatable("onegunlifetime.command.stat.invalid"));
-            return 0;
-        }
-        if (!isValidAttribute(player.registryAccess(), attributeId)) {
-            source.sendFailure(Component.translatable("onegunlifetime.command.stat.invalid"));
-            return 0;
-        }
-
-        SoulDataManager.setStatOverride(player, attributeId, value);
-        PlayerGunAttributeModifierService.refresh(player);
-
-        source.sendSuccess(() -> Component.translatable(
-                "onegunlifetime.command.stat.set_success", attributeId, value), false);
-        return 1;
+        var result = OneGunLifetimeAPI.setStatOverride(player, attributeId, value);
+        return handleResult(source, result, () -> Component.translatable(
+                "onegunlifetime.command.stat.set_success", attributeId, value));
     }
 
     private static int resetAll(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
         CommandSourceStack source = context.getSource();
         ServerPlayer player = source.getPlayerOrException();
 
-        if (!ensureBound(source, player)) {
-            return 0;
-        }
-
-        SoulDataManager.clearStatOverrides(player);
-        PlayerGunAttributeModifierService.refresh(player);
-
-        source.sendSuccess(() -> Component.translatable(
-                "onegunlifetime.command.stat.reset_success"), false);
-        return 1;
+        var result = OneGunLifetimeAPI.clearStatOverrides(player);
+        return handleResult(source, result,
+                () -> Component.translatable("onegunlifetime.command.stat.reset_success"));
     }
 
     private static int resetOne(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
@@ -84,33 +62,31 @@ public final class StatCommand {
         ServerPlayer player = source.getPlayerOrException();
         ResourceLocation attributeId = ResourceLocationArgument.getId(context, "attribute");
 
-        if (!ensureBound(source, player)) {
-            return 0;
-        }
-        if (!isValidAttribute(player.registryAccess(), attributeId)) {
-            source.sendFailure(Component.translatable("onegunlifetime.command.stat.invalid"));
-            return 0;
-        }
-
-        SoulDataManager.removeStatOverride(player, attributeId);
-        PlayerGunAttributeModifierService.refresh(player);
-
-        source.sendSuccess(() -> Component.translatable(
-                "onegunlifetime.command.stat.reset_success"), false);
-        return 1;
+        var result = OneGunLifetimeAPI.removeStatOverride(player, attributeId);
+        return handleResult(source, result,
+                () -> Component.translatable("onegunlifetime.command.stat.reset_success"));
     }
 
-    private static boolean ensureBound(CommandSourceStack source, ServerPlayer player) {
-        if (SoulDataManager.isBound(player)) {
-            return true;
-        }
-        source.sendFailure(Component.translatable("onegunlifetime.command.not_bound"));
-        return false;
-    }
-
-    private static boolean isValidAttribute(RegistryAccess registryAccess, ResourceLocation attributeId) {
-        Registry<AttributeMeta> metaRegistry =
-                registryAccess.registry(ModularShootRegistries.ATTRIBUTE_META_KEY).orElse(null);
-        return metaRegistry != null && metaRegistry.get(attributeId) != null;
+    private static int handleResult(
+            CommandSourceStack source,
+            OneGunLifetimeAPI.MutationResult result,
+            Supplier<Component> successMessage) {
+        return switch (result) {
+            case SUCCESS -> {
+                source.sendSuccess(successMessage, false);
+                yield 1;
+            }
+            case NOT_BOUND -> {
+                source.sendFailure(Component.translatable(
+                        "onegunlifetime.command.not_bound"));
+                yield 0;
+            }
+            default -> {
+                // INVALID_ATTRIBUTE / INVALID_VALUE / INVALID_TRAIT
+                source.sendFailure(Component.translatable(
+                        "onegunlifetime.command.stat.invalid"));
+                yield 0;
+            }
+        };
     }
 }

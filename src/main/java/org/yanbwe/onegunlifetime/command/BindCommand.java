@@ -6,22 +6,18 @@ import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.commands.arguments.ResourceLocationArgument;
-import net.minecraft.core.RegistryAccess;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.item.ItemStack;
-import org.yanbwe.modularshoot.registry.gun.GunRegistry;
-import org.yanbwe.onegunlifetime.attribute.PlayerGunAttributeModifierService;
-import org.yanbwe.onegunlifetime.item.ProjectionGunFactory;
-import org.yanbwe.onegunlifetime.soul.SoulData;
-import org.yanbwe.onegunlifetime.soul.SoulDataManager;
+import org.yanbwe.onegunlifetime.OneGunLifetimeAPI;
 
 /**
  * Implements {@code /onegun bind <gunId>}.
  *
  * <p>Binds the executor's soul to a registered template gun, gives them a new
- * projection gun, and refreshes their mounted soul-gun attributes.</p>
+ * projection gun, and refreshes their mounted soul-gun attributes.
+ * Implementation lives in
+ * {@link org.yanbwe.onegunlifetime.OneGunLifetimeAPI#bindAndGive}.</p>
  */
 public final class BindCommand {
 
@@ -38,35 +34,23 @@ public final class BindCommand {
         CommandSourceStack source = context.getSource();
         ServerPlayer player = source.getPlayerOrException();
         ResourceLocation gunId = ResourceLocationArgument.getId(context, "gunId");
-        RegistryAccess registryAccess = player.registryAccess();
 
-        if (!GunRegistry.getAllGunIds(registryAccess).contains(gunId)) {
-            source.sendFailure(Component.translatable("onegunlifetime.command.bind.not_registered"));
-            return 0;
-        }
-        if (SoulDataManager.isBound(player)) {
-            source.sendFailure(Component.translatable("onegunlifetime.command.bind.already_bound"));
-            return 0;
-        }
-
-        SoulData data;
-        try {
-            data = SoulDataManager.bind(player, gunId);
-        } catch (IllegalStateException e) {
-            source.sendFailure(Component.translatable("onegunlifetime.command.bind.already_bound"));
-            return 0;
-        }
-
-        ItemStack projection = ProjectionGunFactory.create(data, registryAccess);
-        if (!player.getInventory().add(projection)) {
-            player.drop(projection, false);
-        }
-
-        // The SoulDataChangedEvent also refreshes, but an explicit refresh
-        // here avoids any ordering surprise between bind and inventory add.
-        PlayerGunAttributeModifierService.refresh(player);
-
-        source.sendSuccess(() -> Component.translatable("onegunlifetime.command.bind.success", gunId), false);
-        return 1;
+        return switch (OneGunLifetimeAPI.bindAndGive(player, gunId)) {
+            case SUCCESS -> {
+                source.sendSuccess(() -> Component.translatable(
+                        "onegunlifetime.command.bind.success", gunId), false);
+                yield 1;
+            }
+            case ALREADY_BOUND -> {
+                source.sendFailure(Component.translatable(
+                        "onegunlifetime.command.bind.already_bound"));
+                yield 0;
+            }
+            case NOT_REGISTERED -> {
+                source.sendFailure(Component.translatable(
+                        "onegunlifetime.command.bind.not_registered"));
+                yield 0;
+            }
+        };
     }
 }

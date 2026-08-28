@@ -7,8 +7,8 @@ import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
+import org.yanbwe.onegunlifetime.OneGunLifetimeAPI;
 import org.yanbwe.onegunlifetime.soul.SoulData;
-import org.yanbwe.onegunlifetime.soul.SoulDataManager;
 
 /**
  * Implements {@code /onegun info}.
@@ -29,7 +29,7 @@ public final class InfoCommand {
         CommandSourceStack source = context.getSource();
         ServerPlayer player = source.getPlayerOrException();
 
-        SoulData data = SoulDataManager.get(player);
+        SoulData data = OneGunLifetimeAPI.getSoulData(player).orElse(null);
         if (data == null) {
             source.sendFailure(Component.translatable("onegunlifetime.command.not_bound"));
             return 0;

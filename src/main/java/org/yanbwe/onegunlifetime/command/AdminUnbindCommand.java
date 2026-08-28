@@ -8,17 +8,15 @@ import net.minecraft.commands.Commands;
 import net.minecraft.commands.arguments.EntityArgument;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.item.ItemStack;
-import org.yanbwe.modularshoot.ModularShootAPI;
-import org.yanbwe.onegunlifetime.attribute.PlayerGunAttributeModifierService;
-import org.yanbwe.onegunlifetime.def.SoulGunId;
-import org.yanbwe.onegunlifetime.soul.SoulDataManager;
+import org.yanbwe.onegunlifetime.OneGunLifetimeAPI;
 
 /**
  * Implements the admin-only {@code /onegun unbind <player>}.
  *
  * <p>Removes the target's soul binding and clears that player's projection
- * guns from their main inventory, armor slots and offhand slot.</p>
+ * guns from their main inventory, armor slots and offhand slot.
+ * Implementation lives in
+ * {@link org.yanbwe.onegunlifetime.OneGunLifetimeAPI#unbindAll}.</p>
  */
 public final class AdminUnbindCommand {
 
@@ -39,40 +37,13 @@ public final class AdminUnbindCommand {
         CommandSourceStack source = context.getSource();
         ServerPlayer target = EntityArgument.getPlayer(context, "target");
 
-        if (!SoulDataManager.isBound(target)) {
-            source.sendFailure(Component.translatable("onegunlifetime.command.unbind.not_bound"));
+        if (!OneGunLifetimeAPI.unbindAll(target)) {
+            source.sendFailure(Component.translatable(
+                    "onegunlifetime.command.unbind.not_bound"));
             return 0;
         }
-
-        SoulDataManager.unbind(target);
-        PlayerGunAttributeModifierService.remove(target);
-        removeProjectionGuns(target);
-
         source.sendSuccess(() -> Component.translatable(
                 "onegunlifetime.command.unbind.success", target.getGameProfile().getName()), false);
         return 1;
-    }
-
-    private static void removeProjectionGuns(ServerPlayer player) {
-        var inventory = player.getInventory();
-        removeMatching(inventory.items, player);
-        removeMatching(inventory.armor, player);
-        removeMatching(inventory.offhand, player);
-    }
-
-    private static void removeMatching(net.minecraft.core.NonNullList<ItemStack> slots, ServerPlayer player) {
-        for (int i = 0; i < slots.size(); i++) {
-            if (isOwnedProjection(slots.get(i), player)) {
-                slots.set(i, ItemStack.EMPTY);
-            }
-        }
-    }
-
-    private static boolean isOwnedProjection(ItemStack stack, ServerPlayer player) {
-        return ModularShootAPI.getGunId(stack)
-                .filter(SoulGunId::isSoulGunId)
-                .flatMap(SoulGunId::parse)
-                .filter(ownerId -> ownerId.equals(player.getUUID()))
-                .isPresent();
     }
 }

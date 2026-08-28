@@ -187,6 +187,18 @@ publishing {
         maven {
             url "file://${project.projectDir}/repo"
         }
+        // CI（tag 触发的发布工作流注入 GITHUB_TOKEN 后）发布到 GitHub Packages；
+        // 本地无 token 时跳过，避免误发布
+        if (System.getenv('GITHUB_TOKEN') != null) {
+            maven {
+                name = 'OneGunPackages'
+                url = 'https://maven.pkg.github.com/Yanbwe/OneGunLifetime'
+                credentials {
+                    username = System.getenv('GITHUB_ACTOR') ?: ''
+                    password = System.getenv('GITHUB_TOKEN')
+                }
+            }
+        }
     }
 }
 

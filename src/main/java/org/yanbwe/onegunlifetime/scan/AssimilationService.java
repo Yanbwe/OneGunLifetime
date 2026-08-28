@@ -1,7 +1,6 @@
 package org.yanbwe.onegunlifetime.scan;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 import net.minecraft.core.RegistryAccess;
@@ -16,8 +15,8 @@ import org.yanbwe.modularshoot.component.PluginInstance;
 import org.yanbwe.modularshoot.plugin.PluginInstallService.InstallResult;
 import org.yanbwe.modularshoot.plugin.PluginRegistry;
 import org.yanbwe.onegunlifetime.attribute.PlayerGunAttributeModifierService;
-import org.yanbwe.onegunlifetime.def.SoulGunId;
 import org.yanbwe.onegunlifetime.item.ProjectionGunFactory;
+import org.yanbwe.onegunlifetime.item.ProjectionGuns;
 import org.yanbwe.onegunlifetime.soul.SoulData;
 import org.yanbwe.onegunlifetime.soul.SoulDataManager;
 
@@ -44,14 +43,7 @@ public final class AssimilationService {
      *         whose parsed owner matches {@code ownerId}
      */
     public static boolean isOwnedProjection(ItemStack stack, UUID ownerId) {
-        if (stack == null || stack.isEmpty() || ownerId == null) {
-            return false;
-        }
-        return ModularShootAPI.getGunId(stack)
-                .filter(SoulGunId::isSoulGunId)
-                .flatMap(SoulGunId::parse)
-                .filter(ownerId::equals)
-                .isPresent();
+        return ProjectionGuns.isOwnedBy(stack, ownerId);
     }
 
     /**
@@ -216,10 +208,7 @@ public final class AssimilationService {
     }
 
     private static void writeBackProjection(ServerPlayer player, ItemStack projection) {
-        int slot = findProjectionSlot(player);
-        if (slot >= 0) {
-            player.getInventory().setItem(slot, projection);
-        }
+        ProjectionGuns.writeBack(player, projection);
     }
 
     private static void finishAssimilation(ServerPlayer player) {
@@ -242,10 +231,9 @@ public final class AssimilationService {
     }
 
     private static boolean isOtherPlayerSoulGun(ItemStack stack, UUID ownerId) {
-        Optional<UUID> parsedOwner = ModularShootAPI.getGunId(stack)
-                .filter(SoulGunId::isSoulGunId)
-                .flatMap(SoulGunId::parse);
-        return parsedOwner.isPresent() && !parsedOwner.get().equals(ownerId);
+        return ProjectionGuns.ownerOf(stack)
+                .filter(parsed -> !parsed.equals(ownerId))
+                .isPresent();
     }
 
     private static boolean hasProjectionInInventory(ServerPlayer player) {
@@ -253,32 +241,10 @@ public final class AssimilationService {
     }
 
     private static ItemStack findProjection(ServerPlayer player) {
-        int slot = findProjectionSlot(player);
-        return slot >= 0 ? player.getInventory().getItem(slot) : ItemStack.EMPTY;
+        return ProjectionGuns.find(player);
     }
 
     private static int findProjectionSlot(ServerPlayer player) {
-        var inventory = player.getInventory();
-        UUID ownerId = player.getUUID();
-
-        int main = findProjectionSlot(inventory.items, 0, ownerId);
-        if (main >= 0) {
-            return main;
-        }
-        int armor = findProjectionSlot(inventory.armor, 36, ownerId);
-        if (armor >= 0) {
-            return armor;
-        }
-        return findProjectionSlot(inventory.offhand, 40, ownerId);
-    }
-
-    private static int findProjectionSlot(
-            net.minecraft.core.NonNullList<ItemStack> slots, int baseIndex, UUID ownerId) {
-        for (int i = 0; i < slots.size(); i++) {
-            if (isOwnedProjection(slots.get(i), ownerId)) {
-                return baseIndex + i;
-            }
-        }
-        return -1;
+        return ProjectionGuns.findSlot(player);
     }
 }
