@@ -17,5 +17,6 @@
   "onegunlifetime.actionbar.returned": "枪械已回到主人手中。",
   "onegunlifetime.actionbar.cannot_drop": "绑定的枪械无法丢弃。",
   "onegunlifetime.item.memorial": "灵魂枪械纪念品",
-  "onegunlifetime.shoot.not_owner": "只有枪械主人才能开枪。"
+  "onegunlifetime.shoot.not_owner": "只有枪械主人才能开枪。",
+  "onegunlifetime.shoot.assimilating": "这把枪正在同化为你的绑定枪。"
 }

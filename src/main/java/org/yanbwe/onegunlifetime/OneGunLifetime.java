@@ -33,6 +33,7 @@ import org.yanbwe.onegunlifetime.network.SoulDataSyncPayload;
 import org.yanbwe.onegunlifetime.plugin.PluginSyncHandler;
 import org.yanbwe.onegunlifetime.scan.InventoryScanEvents;
 import org.yanbwe.onegunlifetime.scan.LowFrequencyScanHandler;
+import org.yanbwe.onegunlifetime.shoot.AssimilationShootPredicate;
 import org.yanbwe.onegunlifetime.shoot.NonOwnerShootPredicate;
 import org.yanbwe.onegunlifetime.soul.OneGunAttachmentTypes;
 import org.yanbwe.onegunlifetime.soul.SoulData;
@@ -58,6 +59,12 @@ public class OneGunLifetime {
 
         // Player attribute tooltip source: reads from side-appropriate SoulData.
         ModularShootAPI.registerPlayerAttributeSourceProvider(new PlayerGunAttributeSourceProvider());
+
+        // Stage 9: bound players can never fire foreign guns — the trigger
+        // pull denies the shot and fast-tracks assimilation to the next tick.
+        // Registered before NonOwnerShootPredicate so every foreign gun held
+        // by a bound player goes through the assimilation path.
+        ModularShootAPI.registerShootPredicate(new AssimilationShootPredicate());
 
         // Stage 8: only the soul owner may fire their projection gun.
         ModularShootAPI.registerShootPredicate(new NonOwnerShootPredicate());

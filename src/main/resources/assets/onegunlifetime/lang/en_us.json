@@ -17,5 +17,6 @@
   "onegunlifetime.actionbar.returned": "Gun returned to its owner.",
   "onegunlifetime.actionbar.cannot_drop": "This bound gun cannot be dropped.",
   "onegunlifetime.item.memorial": "Soul Gun Memorial",
-  "onegunlifetime.shoot.not_owner": "Only the owner can shoot this gun."
+  "onegunlifetime.shoot.not_owner": "Only the owner can shoot this gun.",
+  "onegunlifetime.shoot.assimilating": "This gun is being assimilated into your soul gun."
 }
