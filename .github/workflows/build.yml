@@ -2,6 +2,10 @@ name: Build
 
 on: [push, pull_request]
 
+permissions:
+  contents: read
+  packages: read
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -26,5 +30,9 @@ jobs:
       - name: Make Gradle wrapper executable
         run: chmod +x ./gradlew
 
+      # GITHUB_TOKEN 必需：build.gradle 仅在存在该环境变量时注册
+      # ModularShoot 的 GitHub Packages 依赖仓库（否则依赖解析失败）
       - name: Build with Gradle
         run: ./gradlew build
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
