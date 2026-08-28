@@ -1,0 +1,21 @@
+{
+  "onegunlifetime.command.bind.success": "Bound your soul to %s.",
+  "onegunlifetime.command.bind.already_bound": "Your soul is already bound to a gun.",
+  "onegunlifetime.command.bind.not_registered": "That gun id is not registered.",
+  "onegunlifetime.command.not_bound": "You are not bound to a soul gun.",
+  "onegunlifetime.command.stat.set_success": "Set %s to %s.",
+  "onegunlifetime.command.stat.reset_success": "Reset stat overrides.",
+  "onegunlifetime.command.stat.invalid": "That attribute is not registered.",
+  "onegunlifetime.command.trait.add_success": "Added trait %s.",
+  "onegunlifetime.command.trait.remove_success": "Removed trait %s.",
+  "onegunlifetime.command.trait.invalid": "That trait is not registered.",
+  "onegunlifetime.command.info.header": "Soul Gun Info for %s",
+  "onegunlifetime.command.unbind.success": "Unbound %s.",
+  "onegunlifetime.command.unbind.not_bound": "That player is not bound.",
+  "onegunlifetime.actionbar.assimilated": "Gun assimilated.",
+  "onegunlifetime.actionbar.plugin_returned": "Plugin could not be assimilated and was returned.",
+  "onegunlifetime.actionbar.returned": "Gun returned to its owner.",
+  "onegunlifetime.actionbar.cannot_drop": "This bound gun cannot be dropped.",
+  "onegunlifetime.item.memorial": "Soul Gun Memorial",
+  "onegunlifetime.shoot.not_owner": "Only the owner can shoot this gun."
+}

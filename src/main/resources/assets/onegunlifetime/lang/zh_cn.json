@@ -1,0 +1,21 @@
+{
+  "onegunlifetime.command.bind.success": "已将你的灵魂绑定到 %s。",
+  "onegunlifetime.command.bind.already_bound": "你的灵魂已经绑定了一把枪。",
+  "onegunlifetime.command.bind.not_registered": "该枪械 ID 未注册。",
+  "onegunlifetime.command.not_bound": "你尚未绑定灵魂枪械。",
+  "onegunlifetime.command.stat.set_success": "已将 %s 设置为 %s。",
+  "onegunlifetime.command.stat.reset_success": "已重置属性覆写。",
+  "onegunlifetime.command.stat.invalid": "该属性未注册。",
+  "onegunlifetime.command.trait.add_success": "已添加特性 %s。",
+  "onegunlifetime.command.trait.remove_success": "已移除特性 %s。",
+  "onegunlifetime.command.trait.invalid": "该特性未注册。",
+  "onegunlifetime.command.info.header": "%s 的灵魂枪械信息",
+  "onegunlifetime.command.unbind.success": "已解除 %s 的绑定。",
+  "onegunlifetime.command.unbind.not_bound": "该玩家尚未绑定。",
+  "onegunlifetime.actionbar.assimilated": "枪械已被同化。",
+  "onegunlifetime.actionbar.plugin_returned": "插件无法并入，已返还。",
+  "onegunlifetime.actionbar.returned": "枪械已回到主人手中。",
+  "onegunlifetime.actionbar.cannot_drop": "绑定的枪械无法丢弃。",
+  "onegunlifetime.item.memorial": "灵魂枪械纪念品",
+  "onegunlifetime.shoot.not_owner": "只有枪械主人才能开枪。"
+}
